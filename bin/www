@@ -33,6 +33,8 @@ server.on('listening', onListening);
 // Chatroom
 
 var numUsers = 0;
+// 房间用户名单
+var roomInfo = {};
 
 // 在服务器端区分以下三种情况：
 
@@ -43,16 +45,47 @@ var numUsers = 0;
 io.on('connection', function(socket) {
     var addedUser = false;
 
+    var url = socket.request.headers.referer;
+    // console.log(url);
+    // 得到roomId
+    var splited = url.split('/');
+    var roomID = splited[splited.length - 1]; // 获取房间ID
+
+    console.log("房间号", roomID);
+
+
     // when the client emits 'new message', this listens and executes
     // 收到消息
     socket.on('new message', function(data) {
+        // 验证如果用户不在房间内则不给发送
+        console.log(roomID, roomInfo[roomID])
+        if ((roomInfo[roomID] != undefined) && roomInfo[roomID].indexOf(user) === -1) {
+            return false;
+        }
         // we tell the client to execute 'new message'
-        socket.broadcast.emit('new message', {
+        // socket.broadcast.emit('new message', {
+        //     username: socket.username,
+        //     message: data
+        // });
+
+
+        // 可以发送消息给多个房间 
+        // socket.to('room1').to('room2').emit('hello');
+
+        socket.to(roomID).emit('new message', {
             username: socket.username,
             message: data
         });
     });
 
+    // 对某个人说话
+    socket.on('say to someboy', function(id, msg) {
+        // send a private message to the socket with the given id
+        client.broadcast.to(id).emit('my message', {
+            username: socket.username,
+            message: msg
+        });
+    });
     // when the client emits 'add user', this listens and executes
     // 新用户来了
     socket.on('add user', function(username) {
@@ -66,10 +99,39 @@ io.on('connection', function(socket) {
             numUsers: numUsers
         });
         // echo globally (all clients) that a person has connected
-        socket.broadcast.emit('user joined', {
+        // socket.broadcast.emit('user joined', {
+        //     username: socket.username,
+        //     numUsers: numUsers
+        // });
+    });
+
+    socket.on('join', function(username) {
+        if (addedUser) return;
+
+        // we store the username in the socket session for this client
+        socket.username = username;
+        ++numUsers;
+        addedUser = true;
+        socket.emit('login', {
+            numUsers: numUsers
+        });
+
+        // 后来添加
+        user = username;
+
+        // 将用户昵称加入房间名单中
+        if (!roomInfo[roomID]) {
+            roomInfo[roomID] = [];
+        }
+        roomInfo[roomID].push(user);
+
+        socket.join(roomID); // 加入房间
+        // 通知房间内人员
+        io.to(roomID).emit('user joined', {
             username: socket.username,
             numUsers: numUsers
         });
+        console.log(user + '加入了' + roomID);
     });
 
     // when the client emits 'typing', we broadcast it to others
@@ -94,8 +156,20 @@ io.on('connection', function(socket) {
         if (addedUser) {
             --numUsers;
 
+            console.log('disconnect:', roomID);
+
+            // 从房间名单中移除
+            if (roomInfo[roomID]) {
+                console.log(roomInfo[roomID])
+                var index = roomInfo[roomID].indexOf(user);
+                if (index !== -1) {
+                    roomInfo[roomID].splice(index, 1);
+                }
+            }
+            socket.leave(roomID); // 退出房间
+
             // echo globally that this client has left
-            socket.broadcast.emit('user left', {
+            socket.to(roomID).emit('user left', {
                 username: socket.username,
                 numUsers: numUsers
             });

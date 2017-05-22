@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Socket.IO Chat Example</title>
+    <title>最简聊天室</title>
     <link rel="stylesheet" href="stylesheets/style.css">
 </head>
 
@@ -23,6 +23,9 @@
         </li>
     </ul>
 
+    <script>
+        var roomId = <%= id%>;
+    </script>
     <script src="/javascripts/jquery-1.10.2.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/javascripts/main.js"></script>

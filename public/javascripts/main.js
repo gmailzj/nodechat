@@ -23,7 +23,9 @@ $(function() {
     var lastTypingTime;
     var $currentInput = $usernameInput.focus();
 
-    var socket = io();
+    // var socket = io();
+    var socket = io('/', { port: 3100 });
+
 
     function addParticipantsMessage(data) {
         var message = '';
@@ -47,12 +49,15 @@ $(function() {
             $currentInput = $inputMessage.focus();
 
             // Tell the server your username
-            socket.emit('add user', username);
+            //socket.emit('add user', username);
+            // 加入房间
+            socket.emit('join', username);
         }
     }
 
     // Sends a chat message
     function sendMessage() {
+        console.log('run')
         var message = $inputMessage.val();
         // Prevent markup from being injected into the message
         message = cleanInput(message);
@@ -238,6 +243,7 @@ $(function() {
 
     // Whenever the server emits 'new message', update the chat body
     socket.on('new message', function(data) {
+        console.log("new message")
         addChatMessage(data);
     });
 
@@ -271,7 +277,7 @@ $(function() {
     socket.on('reconnect', function() {
         log('you have been reconnected');
         if (username) {
-            socket.emit('add user', username);
+            socket.emit('join', username);
         }
     });
 

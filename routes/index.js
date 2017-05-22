@@ -16,7 +16,7 @@ router.use('/:id', function(req, res, next) {
     next();
 });
 router.use('/:id', function(req, res, next) {
-    console.log(req.query, req.params)
+    // console.log(req.query, req.params)
     var id = req.params.id;
     var regex = /^\d+$/;
     if (!regex.test(id)) {
@@ -27,7 +27,8 @@ router.use('/:id', function(req, res, next) {
     id = parseInt(id);
     var data = {
         id: id
-    }
+    };
+
     res.render("room", data)
 });
 module.exports = router;
